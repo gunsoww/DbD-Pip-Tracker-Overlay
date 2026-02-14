@@ -1,0 +1,30 @@
+{
+  "name": "piptracker",
+  "version": "1.0.0",
+  "main": "main.js",
+  "author": "gunsoww",
+  "description": "Simple DBD Tracker",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder"
+  },
+  "build": {
+    "appId": "com.gunsoww.piptracker",
+    "productName": "PipTracker",
+    "win": {
+      "target": "portable",
+      "publish": null
+    },
+    "directories": {
+      "output": "dist"
+    },
+    "asar": true
+  },
+  "devDependencies": {
+    "electron": "^34.0.2",
+    "electron-builder": "^24.13.3"
+  },
+  "dependencies": {
+    "electron-store": "^6.0.1"
+  }
+}

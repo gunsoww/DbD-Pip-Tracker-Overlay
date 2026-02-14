@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, sans-serif; 
+            font-size: 12px;
+            background: #f0f0f0; 
+            color: #000; 
+            margin: 10px;
+            user-select: none;
+        }
+        fieldset { border: 1px solid #ccc; margin-bottom: 10px; padding: 10px; }
+        legend { font-weight: bold; }
+        
+        .hotkey-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+        
+        .key-input { 
+            background: #fff; 
+            border: 1px solid #7a7a7a; 
+            padding: 4px; 
+            width: 80px; 
+            text-align: center;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .key-input.active { background: #fff5cc; border-color: #ffb700; }
+        
+        .footer-actions { display: flex; justify-content: flex-end; gap: 5px; margin-top: 15px; }
+        button { padding: 4px 15px; min-width: 70px; }
+
+        .hint { font-size: 10px; color: #666; margin-top: 5px; }
+    </style>
+</head>
+<body>
+    <fieldset>
+        <legend>Global Hotkeys</legend>
+        <div class="hotkey-row">
+            <span>Add Pip:</span>
+            <div id="boxUp" class="key-input" onclick="capture('up')">]</div>
+        </div>
+        <div class="hotkey-row">
+            <span>Subtract Pip:</span>
+            <div id="boxDown" class="key-input" onclick="capture('down')">[</div>
+        </div>
+        <div class="hint">* Click box and press any key</div>
+    </fieldset>
+
+    <fieldset>
+        <legend>Appearance</legend>
+        <label>
+            <input type="checkbox" id="onTopCheck"> Always on Top
+        </label>
+    </fieldset>
+
+    <div class="footer-actions">
+        <button onclick="save()">OK</button>
+        <button onclick="window.close()">Cancel</button>
+    </div>
+
+    <script>
+        const { ipcRenderer } = require('electron');
+        let currentCapture = null;
+        // Am setat isAlwaysOnTop pe false aici
+        let settings = { keyUp: ']', keyDown: '[', isAlwaysOnTop: false };
+
+        function capture(type) {
+            currentCapture = type;
+            document.querySelectorAll('.key-input').forEach(b => b.classList.remove('active'));
+            document.getElementById(type === 'up' ? 'boxUp' : 'boxDown').classList.add('active');
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (!currentCapture) return;
+            e.preventDefault();
+            let key = e.key === " " ? "Space" : (e.key.length === 1 ? e.key.toUpperCase() : e.key);
+            
+            if (currentCapture === 'up') settings.keyUp = key;
+            else settings.keyDown = key;
+
+            document.getElementById(currentCapture === 'up' ? 'boxUp' : 'boxDown').innerText = key;
+            document.querySelectorAll('.key-input').forEach(b => b.classList.remove('active'));
+            currentCapture = null;
+        });
+
+        function save() {
+            settings.isAlwaysOnTop = document.getElementById('onTopCheck').checked;
+            ipcRenderer.send('update-settings', settings);
+            window.close();
+        }
+    </script>
+</body>
+</html>

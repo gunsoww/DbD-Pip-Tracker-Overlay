@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            margin: 0; padding: 0;
+            width: 1280px; height: 50px;
+            overflow: hidden;
+            display: flex; align-items: center;
+            background: url('assets/background.png') no-repeat;
+            background-size: contain;
+            /* This allows the window to be dragged */
+            -webkit-app-region: drag; 
+            position: relative;
+            border-radius: 0 !important;
+            /* Prevents image/text selection */
+            user-select: none;
+            -webkit-user-drag: none;
+        }
+
+        #click-layer {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 999;
+            /* Important: no-drag on this layer allows right-click to pass to JS */
+            -webkit-app-region: no-drag; 
+        }
+
+        #rank-overlay {
+            position: absolute;
+            top: 0; left: 0;
+            width: 1280px; height: 50px;
+            pointer-events: none;
+            background-size: contain;
+            background-repeat: no-repeat;
+            z-index: 1;
+            transition: opacity 0.5s ease-in-out, background-image 0.5s ease-in-out;
+            opacity: 0;
+        }
+
+        #rank-overlay.active { opacity: 1; }
+
+        #main-wrapper {
+            display: flex;
+            align-items: center;
+            margin-left: 55px; 
+            position: relative;
+            z-index: 2;
+            pointer-events: none; /* Allows click-layer to see the clicks */
+        }
+
+        .rank-container { display: flex; align-items: center; }
+        .division { display: flex; align-items: center; gap: 2px; }
+        .pip { 
+            width: 8.5px; height: auto; 
+            transition: filter 0.2s; 
+            -webkit-user-drag: none; /* Specifically prevents dragging the image file */
+        }
+
+        #rank-ash { gap: 8px; margin-right: 55px; } 
+        #rank-bronze { gap: 10px; margin-right: 60px; }
+        #rank-silver { gap: 10px; margin-right: 55px; }
+        #rank-gold { gap: 10px; margin-right: 55px; }
+        #rank-iri { gap: 10px; }
+    </style>
+</head>
+<body>
+    <div id="click-layer"></div>
+    <div id="rank-overlay"></div>
+    <div id="main-wrapper"></div>
+
+    <script>
+        const { ipcRenderer } = require('electron');
+        const wrapper = document.getElementById('main-wrapper');
+        const overlay = document.getElementById('rank-overlay');
+
+        const config = [
+            { id: 'ash', diviziuni: [3, 3, 4, 4], threshold: 14, img: 'assets/rank1.png' },
+            { id: 'bronze', diviziuni: [4, 4, 4, 4], threshold: 30, img: 'assets/rank2.png' },
+            { id: 'silver', diviziuni: [5, 5, 5, 5], threshold: 50, img: 'assets/rank3.png' },
+            { id: 'gold', diviziuni: [5, 5, 5, 5], threshold: 70, img: 'assets/rank4.png' },
+            { id: 'iri', diviziuni: [5, 5, 5], threshold: 85, img: 'assets/rank5.png' }
+        ];
+
+        let allPips = [];
+
+        function buildUI() {
+            let globalCount = 1;
+            config.forEach(rank => {
+                const rankContainer = document.createElement('div');
+                rankContainer.id = `rank-${rank.id}`;
+                rankContainer.className = 'rank-container';
+                rank.diviziuni.forEach(count => {
+                    const divContainer = document.createElement('div');
+                    divContainer.className = 'division';
+                    for (let i = 0; i < count; i++) {
+                        const img = document.createElement('img');
+                        img.src = 'assets/pip-empty.png';
+                        img.className = 'pip';
+                        img.draggable = false;
+                        divContainer.appendChild(img);
+                        allPips.push(img);
+                        globalCount++;
+                    }
+                    rankContainer.appendChild(divContainer);
+                });
+                wrapper.appendChild(rankContainer);
+            });
+        }
+
+        function updateUI(current) {
+            let activeImg = '';
+            let hasRankUp = false;
+            for (let i = config.length - 1; i >= 0; i--) {
+                if (current >= config[i].threshold) {
+                    activeImg = `url('${config[i].img}')`;
+                    hasRankUp = true;
+                    break;
+                }
+            }
+            if (hasRankUp) {
+                overlay.style.backgroundImage = activeImg;
+                overlay.classList.add('active');
+            } else {
+                overlay.classList.remove('active');
+            }
+            allPips.forEach((pip, index) => {
+                const num = index + 1;
+                pip.src = num <= current ? 'assets/pip-full.png' : 'assets/pip-empty.png';
+                pip.style.filter = num <= current ? 'brightness(1.1) drop-shadow(0 0 2px white)' : 'none';
+            });
+            ipcRenderer.send('sync-pips-count', current);
+            localStorage.setItem('savedPips', current);
+        }
+
+        buildUI();
+        const savedValue = localStorage.getItem('savedPips');
+        if (savedValue !== null) {
+            setTimeout(() => { updateUI(parseInt(savedValue)); }, 100);
+        }
+
+        ipcRenderer.on('update-pips', (event, current) => { updateUI(current); });
+
+        // Right-click logic
+        document.getElementById('click-layer').addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            ipcRenderer.send('show-context-menu');
+        });
+    </script>
+</body>
+</html>

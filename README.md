@@ -1,3 +1,5 @@
+<img width="1920" height="1080" alt="piptracker" src="https://github.com/user-attachments/assets/4dc9cd3a-665c-4c2a-ba9c-bfc71a9695b4" />
+
 # Simple Dead by Daylight Pip / Grade Tracker Overlay
 
 A simple manual & visual tracker for your grade progress, from Ash 4 to Iridescent 1 with automatic saving.
